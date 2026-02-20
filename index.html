@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>灵珠 / 魔丸 人格倾向测试</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --good: #0f766e;
+      --warn: #b45309;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #eef3fb 0%, #f8fbff 100%);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 920px;
+      margin: 40px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    h1 { margin: 0 0 8px; font-size: 30px; }
+    h2 { margin-top: 0; }
+    .subtitle { color: var(--muted); margin-top: 0; }
+    .meta {
+      font-size: 14px;
+      color: var(--muted);
+      padding: 12px 14px;
+      border-left: 4px solid var(--accent);
+      background: #eff6ff;
+      border-radius: 10px;
+    }
+    .question {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .question p { margin: 0 0 10px; font-weight: 600; }
+    .opts { display: grid; gap: 8px; }
+    label {
+      display: block;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all .2s ease;
+    }
+    label:hover { border-color: #bfdbfe; background: #f8fbff; }
+    input[type='radio'] { margin-right: 8px; }
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .primary { background: var(--accent); color: white; }
+    .ghost { background: #f3f4f6; color: #111827; }
+    .report {
+      display: none;
+      border-top: 1px dashed #d1d5db;
+      margin-top: 20px;
+      padding-top: 20px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .lingzhu { background: #dcfce7; color: var(--good); }
+    .mowan { background: #ffedd5; color: var(--warn); }
+    .balanced { background: #e0e7ff; color: #4338ca; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .metric {
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+    }
+    .footer-note { font-size: 13px; color: var(--muted); margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>灵珠 / 魔丸人格倾向测试</h1>
+      <p class="subtitle">以心理学中“气质维度 + 行为偏好”思路设计的轻量化测评（娱乐与自我反思用途）。</p>
+      <p class="meta">说明：本测评不是临床诊断工具。“灵珠”代表更偏稳定、共情、规则导向；“魔丸”代表更偏冲劲、独立、突破导向。两者都可发展为成熟人格风格。</p>
+    </section>
+
+    <section class="card">
+      <h2>开始作答</h2>
+      <form id="quiz"></form>
+      <div class="actions">
+        <button type="button" class="primary" id="submitBtn">生成报告</button>
+        <button type="button" class="ghost" id="resetBtn">重置答案</button>
+      </div>
+
+      <section id="report" class="report">
+        <h2>你的测试报告</h2>
+        <div id="typeBadge" class="badge">-</div>
+        <p id="summary"></p>
+        <div class="grid">
+          <div class="metric"><strong>灵珠倾向：</strong><span id="lingScore">0</span></div>
+          <div class="metric"><strong>魔丸倾向：</strong><span id="moScore">0</span></div>
+          <div class="metric"><strong>平衡指数：</strong><span id="balance">0</span></div>
+        </div>
+        <h3>发展建议</h3>
+        <ul id="advice"></ul>
+        <p class="footer-note">结果会受你当下状态影响。建议间隔一周复测，并结合现实行为观察。</p>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const questions = [
+      { text: '当团队出现冲突时，你更可能：', ling: '先调和关系，找共同点', mo: '直面分歧，快速拍板' },
+      { text: '面对明确规则时，你通常：', ling: '先理解并遵循规则', mo: '先看规则是否值得优化' },
+      { text: '遇到高压任务时，你更常见的策略：', ling: '有节奏推进，避免失控', mo: '集中火力冲刺，先拿结果' },
+      { text: '别人评价你时，更接近：', ling: '稳定可靠、好合作', mo: '有魄力、敢突破' },
+      { text: '当你做错决定后，你更倾向：', ling: '复盘并修正流程', mo: '立刻纠偏并继续推进' },
+      { text: '在陌生环境中，你通常：', ling: '先观察氛围再行动', mo: '先行动，在行动中适应' },
+      { text: '你更看重哪种成就感：', ling: '关系和谐、长期可持续', mo: '打破限制、快速成长' },
+      { text: '当他人否定你时，你更可能：', ling: '先理解对方立场', mo: '坚持自我并争取证明' }
+    ];
+
+    const quiz = document.getElementById('quiz');
+    const report = document.getElementById('report');
+
+    questions.forEach((q, i) => {
+      const block = document.createElement('div');
+      block.className = 'question';
+      block.innerHTML = `
+        <p>${i + 1}. ${q.text}</p>
+        <div class="opts">
+          <label><input type="radio" name="q${i}" value="ling" />A. ${q.ling}</label>
+          <label><input type="radio" name="q${i}" value="mo" />B. ${q.mo}</label>
+        </div>
+      `;
+      quiz.appendChild(block);
+    });
+
+    function buildAdvice(type) {
+      if (type === '灵珠型') {
+        return [
+          '保持你的共情与稳定优势，同时设定“快速决策窗口”，避免过度权衡。',
+          '在关键节点尝试更直接表达立场，减少被动承担。',
+          '把你的长期主义能力转化为可量化目标，提升影响力。'
+        ];
+      }
+      if (type === '魔丸型') {
+        return [
+          '保持行动力的同时，引入“停顿10分钟复盘”机制，降低冲动成本。',
+          '在高压沟通中多做一次换位表述，提升团队协同效率。',
+          '给关键项目设置风险缓冲区，避免单点突破带来系统性风险。'
+        ];
+      }
+      return [
+        '你具备较好的风格整合能力，可在不同场景灵活切换策略。',
+        '建议继续强化“何时稳定、何时突破”的情境判断。',
+        '通过复盘记录你的高效决策模式，形成个人方法库。'
+      ];
+    }
+
+    document.getElementById('submitBtn').addEventListener('click', () => {
+      let ling = 0, mo = 0;
+
+      for (let i = 0; i < questions.length; i++) {
+        const checked = document.querySelector(`input[name="q${i}"]:checked`);
+        if (!checked) {
+          alert('请完成全部题目后再生成报告。');
+          return;
+        }
+        checked.value === 'ling' ? ling++ : mo++;
+      }
+
+      const diff = Math.abs(ling - mo);
+      let type = '';
+      let summary = '';
+      const badge = document.getElementById('typeBadge');
+
+      if (ling - mo >= 2) {
+        type = '灵珠型';
+        summary = '你在人际敏感度、稳定性和责任感上表现突出，倾向通过秩序与协作解决问题。';
+        badge.className = 'badge lingzhu';
+      } else if (mo - ling >= 2) {
+        type = '魔丸型';
+        summary = '你在行动力、独立性与突破意识上更强，倾向通过主动出击推动改变。';
+        badge.className = 'badge mowan';
+      } else {
+        type = '灵魔平衡型';
+        summary = '你同时具备稳定与进取特质，能根据情境在合作与突破之间切换。';
+        badge.className = 'badge balanced';
+      }
+
+      badge.textContent = `人格倾向：${type}`;
+      document.getElementById('summary').textContent = summary;
+      document.getElementById('lingScore').textContent = `${ling} / ${questions.length}`;
+      document.getElementById('moScore').textContent = `${mo} / ${questions.length}`;
+      document.getElementById('balance').textContent = `${questions.length - diff} / ${questions.length}`;
+
+      const adviceList = document.getElementById('advice');
+      adviceList.innerHTML = '';
+      buildAdvice(type).forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = item;
+        adviceList.appendChild(li);
+      });
+
+      report.style.display = 'block';
+      report.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      document.querySelectorAll('input[type="radio"]').forEach(input => input.checked = false);
+      report.style.display = 'none';
+    });
+  </script>
+</body>
+</html>
